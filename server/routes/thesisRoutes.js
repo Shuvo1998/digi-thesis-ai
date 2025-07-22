@@ -2,7 +2,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { uploadThesis, getMyTheses } = require('../controllers/thesisController');
+const { uploadThesis, getMyTheses, getThesisById } = require('../controllers/thesisController');
 const { protect } = require('../middleware/authMiddleware'); // For protected routes
 
 const router = express.Router();
@@ -45,5 +45,6 @@ const upload = multer({
 // Define thesis routes
 router.post('/upload', protect, upload.single('thesisFile'), uploadThesis); // 'thesisFile' matches the formData.append name from frontend
 router.get('/', protect, getMyTheses); // Route to get all theses for the logged-in user
+router.get('/:id', protect, getThesisById);
 
 module.exports = router;

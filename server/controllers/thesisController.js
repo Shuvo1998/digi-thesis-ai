@@ -61,8 +61,37 @@ const getMyTheses = asyncHandler(async (req, res) => {
     res.status(200).json(theses);
 });
 
+// @desc    Get single thesis by ID
+// @route   GET /api/theses/:id
+// @access  Private (only accessible by authenticated user who owns it, or admin/supervisor)
+const getThesisById = asyncHandler(async (req, res) => {
+    // req.user is available because of protect middleware
+    if (!req.user) {
+        res.status(401);
+        throw new Error('Not authorized, no user token');
+    }
+
+    const thesis = await Thesis.findById(req.params.id);
+
+    if (!thesis) {
+        res.status(404);
+        throw new Error('Thesis not found');
+    }
+
+    // Optional: Add authorization check if only the owner or specific roles can view
+    // For now, any logged-in user can view if they have the ID.
+    // If you want to restrict it to the owner:
+    if (thesis.user.toString() !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'supervisor') {
+        res.status(403); // Forbidden
+        throw new Error('Not authorized to view this thesis');
+    }
+
+
+    res.status(200).json(thesis);
+});
 
 module.exports = {
     uploadThesis,
     getMyTheses,
+    getThesisById,
 };
