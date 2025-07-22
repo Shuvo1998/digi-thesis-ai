@@ -5,6 +5,9 @@ const User = require('../models/User'); // Ensure User model is also imported fo
 const path = require('path');
 const fs = require('fs'); // For file system operations, useful if you ever need to read the file
 
+const pdf = require('pdf-parse'); // For PDF text extraction
+const mammoth = require('mammoth'); // For DOCX text extraction
+
 // @desc    Upload new thesis
 // @route   POST /api/theses/upload
 // @access  Private
@@ -122,18 +125,48 @@ const getThesisById = asyncHandler(async (req, res) => {
 
 // @desc    Simulate AI Analysis for a Thesis (NEW FUNCTION)
 // This function will run in the background without holding up the HTTP response
+// @desc    Simulate AI Analysis for a Thesis (now with text extraction)
+// This function will run in the background without holding up the HTTP response
 const initiateThesisAnalysis = async (thesisId) => {
+    let thesis; // Declare thesis variable here to be accessible throughout try block
     try {
         console.log(`[AI Simulation] Starting analysis for Thesis ID: ${thesisId}`);
 
-        // Update thesis status to 'analyzing'
+        thesis = await Thesis.findById(thesisId); // Fetch the thesis again to get filePath and fileExtension
+        if (!thesis) {
+            console.error(`[AI Simulation] Thesis with ID ${thesisId} not found.`);
+            return;
+        }
+
         await Thesis.findByIdAndUpdate(thesisId, { analysisStatus: 'analyzing' });
 
-        // Simulate a delay for AI processing (e.g., 5-10 seconds)
+        const fullFilePath = thesis.filePath; // <--- SIMPLIFIED TO USE THE ABSOLUTE PATH DIRECTLY
+        console.log(`[AI Simulation] Attempting to read file: ${fullFilePath}`);
+
+        let extractedText = '';
+        const fileBuffer = fs.readFileSync(fullFilePath); // Read the file into a buffer
+
+        if (thesis.fileExtension.toLowerCase() === 'pdf') {
+            console.log('[AI Simulation] Processing PDF file...');
+            const data = await pdf(fileBuffer);
+            extractedText = data.text;
+        } else if (thesis.fileExtension.toLowerCase() === 'docx') {
+            console.log('[AI Simulation] Processing DOCX file...');
+            const result = await mammoth.extractRawText({ buffer: fileBuffer });
+            extractedText = result.value; // The plain text content
+        } else {
+            console.warn(`[AI Simulation] Unsupported file type for text extraction: ${thesis.fileExtension}`);
+            extractedText = `(Text extraction not supported for ${thesis.fileExtension} files)`;
+            // You might want to set analysisStatus to 'failed' or similar here if extraction is critical
+        }
+
+        console.log(`[AI Simulation] Extracted text (first 500 chars):\n${extractedText.substring(0, 500)}...`);
+
+        // --- Simulate a delay for AI processing (e.g., 5-10 seconds) ---
         const delay = Math.floor(Math.random() * 6 + 5) * 1000; // 5-10 seconds
         await new Promise(resolve => setTimeout(resolve, delay));
 
-        // Simulate AI results
+        // --- Simulate AI results (these remain the same for now) ---
         const simulatedPlagiarismScore = Math.floor(Math.random() * 30) + 5; // Random score 5-35%
         const simulatedGrammarScore = Math.floor(Math.random() * 20) + 70; // Random score 70-90%
         const simulatedDetails = {
@@ -144,7 +177,9 @@ const initiateThesisAnalysis = async (thesisId) => {
             grammar: {
                 errors_found: 5,
                 suggestions: ["Check subject-verb agreement.", "Improve sentence structure."]
-            }
+            },
+            // You could potentially store the full extracted text here if needed later for real AI
+            // extractedTextSample: extractedText.substring(0, 1000) // Store a sample or hash
         };
 
         // Update thesis with analysis results and 'completed' status
@@ -156,7 +191,7 @@ const initiateThesisAnalysis = async (thesisId) => {
                 grammarScore: simulatedGrammarScore,
                 analysisDetails: simulatedDetails,
             },
-            { new: true } // Return the updated document
+            { new: true }
         );
 
         console.log(`[AI Simulation] Analysis completed for Thesis ID: ${thesisId}. Scores: Plagiarism ${simulatedPlagiarismScore}%, Grammar ${simulatedGrammarScore}%`);
@@ -164,7 +199,9 @@ const initiateThesisAnalysis = async (thesisId) => {
     } catch (error) {
         console.error(`[AI Simulation] Error during analysis for Thesis ID: ${thesisId}:`, error);
         // Set status to 'failed' if an error occurs
-        await Thesis.findByIdAndUpdate(thesisId, { analysisStatus: 'failed' });
+        if (thesis) { // Only update if thesis was found
+            await Thesis.findByIdAndUpdate(thesisId, { analysisStatus: 'failed' });
+        }
     }
 };
 
