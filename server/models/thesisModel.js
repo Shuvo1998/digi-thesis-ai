@@ -3,25 +3,32 @@ const mongoose = require('mongoose');
 
 const thesisSchema = mongoose.Schema(
     {
-        user: { // The user who uploaded the thesis
+        user: {
             type: mongoose.Schema.Types.ObjectId,
             required: true,
-            ref: 'User', // Refers to the User model
+            ref: 'User',
         },
         title: {
             type: String,
-            required: [true, 'Please add a thesis title'],
-            trim: true,
+            required: [true, 'Please add a title'],
         },
         abstract: {
             type: String,
             required: [true, 'Please add an abstract'],
         },
-        filePath: { // Path to the uploaded file on the server or cloud storage
+        tags: {
+            type: [String], // Array of strings
+            default: [],
+        },
+        supervisor: {
+            type: String,
+            required: [true, 'Please add a supervisor name'],
+        },
+        fileName: {
             type: String,
             required: true,
         },
-        fileName: { // Original file name
+        filePath: { // Path to the uploaded file
             type: String,
             required: true,
         },
@@ -29,34 +36,29 @@ const thesisSchema = mongoose.Schema(
             type: String,
             required: true,
         },
-        tags: { // Array of tags
-            type: [String], // Array of strings
-            default: [],
-        },
-        supervisor: { // Optional supervisor name
+        // --- NEW FIELDS FOR AI ANALYSIS ---
+        analysisStatus: {
             type: String,
-            default: '',
+            enum: ['uploaded', 'pending_analysis', 'analyzing', 'completed', 'failed'],
+            default: 'uploaded', // Initial status after upload
         },
-        status: { // e.g., 'pending_review', 'plagiarism_checked', 'approved', 'rejected'
-            type: String,
-            enum: ['uploaded', 'processing', 'completed', 'failed'],
-            default: 'uploaded',
-        },
-        plagiarismScore: { // AI related field
+        plagiarismScore: {
             type: Number,
-            default: 0,
+            default: 0, // Percentage from 0-100
         },
-        grammarScore: { // AI related field
+        grammarScore: {
             type: Number,
-            default: 0,
+            default: 0, // Percentage from 0-100 (e.g., 100 for perfect grammar)
         },
-        // You might add more fields here like 'uploadDate', 'lastCheckedDate', etc.
+        analysisDetails: { // To store more detailed AI feedback (e.g., JSON)
+            type: mongoose.Schema.Types.Mixed, // Allows flexible data types
+            default: {},
+        },
+        // --- END NEW FIELDS ---
     },
     {
-        timestamps: true, // Adds createdAt and updatedAt fields
+        timestamps: true,
     }
 );
 
-const Thesis = mongoose.model('Thesis', thesisSchema);
-
-module.exports = Thesis;
+module.exports = mongoose.model('Thesis', thesisSchema);
