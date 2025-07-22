@@ -1,51 +1,48 @@
 // digi-thesis-ai/server/models/User.js
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs'); // Assuming you have bcryptjs for password hashing
 
 const userSchema = mongoose.Schema(
     {
         username: {
             type: String,
-            required: true,
+            required: [true, 'Please add a username'],
             unique: true,
         },
         email: {
             type: String,
-            required: true,
+            required: [true, 'Please add an email'],
             unique: true,
         },
         password: {
             type: String,
-            required: true,
+            required: [true, 'Please add a password'],
         },
         role: {
             type: String,
-            required: true,
-            enum: ['student', 'supervisor', 'admin'], // Define allowed roles
-            default: 'student', // Default role for new registrations
+            enum: ['student', 'supervisor', 'admin'],
+            default: 'student',
         },
-        // You might add more fields later, e.g., fullName, department, studentID etc.
     },
     {
-        timestamps: true, // Adds createdAt and updatedAt fields automatically
+        timestamps: true,
     }
 );
 
-// Pre-save hook to hash password before saving user
+// Hash password before saving
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {
-        next(); // If password is not modified, move to next middleware
+        next();
     }
-
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Method to compare entered password with hashed password in DB
+// Method to compare entered password with hashed password in database
 userSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema); // Define the model
 
-export default User;
+module.exports = User; // <--- ENSURE THIS IS PRESENT AND CORRECT

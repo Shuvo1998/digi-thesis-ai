@@ -1,17 +1,17 @@
 // digi-thesis-ai/server/config/db.js
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
+const mongoose = require('mongoose'); // Use require
+const dotenv = require('dotenv');     // Use require
 
-dotenv.config(); // Load environment variables
+dotenv.config();
 
 const connectDB = async () => {
     try {
         const conn = await mongoose.connect(process.env.MONGO_URI);
-        console.log(`MongoDB Connected: ${conn.connection.host}`);
+        console.log(`MongoDB Connected: ${conn.connection.host}`.cyan.underline); // Add colors for consistency
     } catch (error) {
-        console.error(`Error: ${error.message}`);
-        process.exit(1); // Exit process with failure
+        console.error(`Error: ${error.message}`.red.bold);
+        process.exit(1);
     }
 };
 
-export default connectDB;
+module.exports = connectDB; // Use module.exports

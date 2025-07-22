@@ -1,7 +1,7 @@
 // digi-thesis-ai/server/controllers/authController.js
-import User from '../models/User.js';
-import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
+const User = require('../models/User'); // Use require
+const jwt = require('jsonwebtoken');     // Use require
+const dotenv = require('dotenv');        // Use require
 
 dotenv.config();
 
@@ -18,12 +18,10 @@ const generateToken = (id) => {
 const registerUser = async (req, res) => {
     const { username, email, password, role } = req.body;
 
-    // Simple validation
     if (!username || !email || !password) {
         return res.status(400).json({ message: 'Please enter all fields' });
     }
 
-    // Check for existing user
     const userExists = await User.findOne({ email });
     if (userExists) {
         return res.status(400).json({ message: 'User with this email already exists' });
@@ -39,7 +37,7 @@ const registerUser = async (req, res) => {
             username,
             email,
             password,
-            role: role || 'student', // Default to 'student' if no role provided
+            role: role || 'student',
         });
 
         if (user) {
@@ -65,12 +63,10 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
-    // Simple validation
     if (!email || !password) {
         return res.status(400).json({ message: 'Please enter all fields' });
     }
 
-    // Check for user existence
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
@@ -86,4 +82,4 @@ const loginUser = async (req, res) => {
     }
 };
 
-export { registerUser, loginUser };
+module.exports = { registerUser, loginUser }; // Use module.exports
